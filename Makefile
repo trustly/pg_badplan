@@ -12,7 +12,7 @@ release-zip: all
 	git archive --format zip --prefix=pg_planwayoff-$(EXTVERSION)/ --output ./pg_planwayoff-$(EXTVERSION).zip HEAD
 	unzip ./pg_planwayoff-$(EXTVERSION).zip
 	rm ./pg_planwayoff-$(EXTVERSION).zip
-	sed -i -e "s/__VERSION__/$(EXTVERSION)/g"  ./pg_planwayoff-$(EXTVERSION)/META.json
+	#sed -i -e "s/__VERSION__/$(EXTVERSION)/g"  ./pg_planwayoff-$(EXTVERSION)/META.json
 	zip -r ./pg_planwayoff-$(EXTVERSION).zip ./pg_planwayoff-$(EXTVERSION)/
 	rm ./pg_planwayoff-$(EXTVERSION) -rf
 
