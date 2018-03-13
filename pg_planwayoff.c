@@ -52,7 +52,9 @@ void _PG_fini(void) {
 Enable instrumentation
 */
 static void pgpwo_ExecutorStart(QueryDesc *queryDesc, int eflags) {
-	queryDesc->instrument_options |= INSTRUMENT_ROWS;
+	if (pgpwo_enabled) {
+		queryDesc->instrument_options |= INSTRUMENT_ROWS;
+	}
 
 	if (prev_ExecutorStart) {
 		prev_ExecutorStart(queryDesc, eflags);
@@ -66,18 +68,20 @@ static void pgpwo_ExecutorStart(QueryDesc *queryDesc, int eflags) {
 Checks if the estimate vs actual is way off and if so log
  */
 static void pgpwo_ExecutorEnd(QueryDesc *queryDesc) {
-	if (queryDesc->plannedstmt != NULL &&
-		queryDesc->planstate != NULL && 
-		queryDesc->planstate->instrument != NULL) {
+	if (pgpwo_enabled) {
+		if (queryDesc->plannedstmt != NULL &&
+			queryDesc->planstate != NULL && 
+			queryDesc->planstate->instrument != NULL) {
 
-		InstrEndLoop(queryDesc->planstate->instrument);
+			InstrEndLoop(queryDesc->planstate->instrument);
 
-		double expected = queryDesc->plannedstmt->planTree->plan_rows;
-		double nloops = queryDesc->planstate->instrument->nloops;
-		double actual = queryDesc->planstate->instrument->ntuples / nloops;
-		double ratio = actual/expected;
+			double expected = queryDesc->plannedstmt->planTree->plan_rows;
+			double nloops = queryDesc->planstate->instrument->nloops;
+			double actual = queryDesc->planstate->instrument->ntuples / nloops;
+			double ratio = actual/expected;
 
-		ereport(LOG, (errmsg_internal("pgplanwayoff: expected=%.0f actual=%.0f ratio=%.0f", expected, actual, ratio)));
+			ereport(LOG, (errmsg_internal("pgplanwayoff: expected=%.0f actual=%.0f ratio=%.0f", expected, actual, ratio)));
+		}
 	}
 	
 	if (prev_ExecutorEnd) {
