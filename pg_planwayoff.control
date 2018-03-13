@@ -1,0 +1,4 @@
+comment = 'An extension warning when planner and actual execution statistics are way off'
+default_version = '0.0.1'
+module_pathname = '$libdir/pg_planwayoff'
+relocatable = true
