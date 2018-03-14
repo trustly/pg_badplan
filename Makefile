@@ -1,4 +1,4 @@
-EXTENSION    = pg_planwayoff
+EXTENSION    = pg_badplan
 EXTVERSION   = $(shell grep default_version $(EXTENSION).control | sed -e "s/default_version[[:space:]]*=[[:space:]]*'\([^']*\)'/\1/")
 TESTS        = $(wildcard test/sql/*.sql)
 REGRESS      = $(patsubst test/sql/%.sql,%,$(TESTS))
@@ -10,7 +10,7 @@ PG_CPPFLAGS  = -DEXTNAME=\"$(EXTENSION)\"
 all:
 
 release-zip: all
-	git archive --format zip --prefix=pg_planwayoff-$(EXTVERSION)/ --output ./pg_planwayoff-$(EXTVERSION).zip HEAD
+	git archive --format zip --prefix=$(EXTENSION)-$(EXTVERSION)/ --output ./$(EXTENSION)-$(EXTVERSION).zip HEAD
 
 DATA = $(wildcard *--*.sql)
 PGXS := $(shell $(PG_CONFIG) --pgxs)
