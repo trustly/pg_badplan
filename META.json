@@ -1,0 +1,20 @@
+{
+    "name": "pg_badplan",
+    "abstract": "An extension for looking at the planners expected vs actual rows ratio",
+    "version": "__VERSION__",
+    "maintainer": "Claes Jakobsson <claes.jakobsson@trustly.com>",
+    "license": "MIT",
+    "release_status": "stable",
+    "provides": {
+         "pg_qualstats": {
+             "abstract": "An extension looking at the planners precision",
+             "file": "pg_badplan.sql",
+             "docfile": "README.md",
+             "version": "__VERSION__"
+         }
+     },
+    "meta-spec": {
+       "version": "1.0.0",
+       "url": "http://pgxn.org/meta/spec.txt"
+    }
+ }
