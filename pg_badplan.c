@@ -194,8 +194,7 @@ static void pgpwo_ExecutorEnd(QueryDesc *queryDesc) {
 					struct timespec tp;
 					clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
 
-					int64_t curr_ms = tp.tv_sec + (tp.tv_nsec / 100000);
-
+					int64_t curr_ms = (tp.tv_sec * 1000) + (tp.tv_nsec / 100000);
 
 					if (curr_ms - pgpwo_last_ts > pgpwo_min_dump_interval_ms) {
 						char path[MAXPGPATH];
