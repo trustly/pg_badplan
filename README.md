@@ -28,6 +28,8 @@ The following GUCs can be configured, in postgresql.conf:
 - *pg_badplan.ratio* (real, deafult 0.2): A value between 0 and 1 that sets the ratio max expected/actual or actual/expected ratio before we log. For example 0.2 means that we're 5 times off the expected and 0.1 means we're 10 times off the expected.
 - *pg_badplan.min_row_threshold* (int, default 1000): Queries where expected and actual rows are below this threshold are ignored since these probablly execute so fast anyway.
 - *pg_badplan.logdir* (string, default ""): A directory where we'll write the SQL for the query with the bad plan. The filename is in the form of `<backend-id>-<ms-timestamp>.sql`
+- *pg_badplan.min_dump_interval_ms* (int, default 60000): The mimimum elapsed time in milleseconds since the last time we dumped a query to disk. This is useful for not flooding *pg_badplan.logdir* with
+saves.
 
 Usage
 -----
