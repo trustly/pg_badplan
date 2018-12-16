@@ -6,6 +6,10 @@
 #include "utils/elog.h"
 #include <unistd.h>
 
+#if PG_VERSION_NUM >= 110000
+#include "storage/backendid.h"
+#endif
+
 #ifndef EXTNAME
 #define EXTNAME "pg_badplan"
 #endif
@@ -116,7 +120,7 @@ void _PG_fini(void) {
 	ExecutorStart_hook = prev_ExecutorStart;
 }
 
-/* 
+/*
 Whenever we change the ratio recalculate the over and under thresholds
 */
 void pgpwo_RecalculateRatio(double val, void *extra) {
@@ -133,25 +137,25 @@ static bool pgpwo_CheckLogdirConf(char **val, void **extra, GucSource src) {
 	int r;
 
 	if (val == NULL || *val == NULL) {
-		return TRUE;
+		return true;
 	}
 
 	/* Empty string set to NULL */
 	if (**val == '\0') {
 		*val = NULL;
-		return TRUE;
+		return true;
 	}
 
 	/* Check if we can stat and write to dir */
 	r = access(*val, W_OK);
 	if (r == 0) {
-		return TRUE;
+		return true;
 	}
 	else {
 		ereport(ERROR, (errmsg_internal(EXTNAME ": failed to set logdir. access() returned %d (%s)", r, strerror(r))));
 	}
 
-	return FALSE;
+	return false;
 }
 
 /*
@@ -177,34 +181,41 @@ Checks if the rows estimate vs rows actual is outside ratio
 static void pgpwo_ExecutorEnd(QueryDesc *queryDesc) {
 	if (pgpwo_enabled) {
 		if (queryDesc->plannedstmt != NULL &&
-			queryDesc->planstate != NULL && 
+			queryDesc->planstate != NULL &&
 			queryDesc->planstate->instrument != NULL) {
+
+			double expected, nloops, actual, ratio;
 
 			InstrEndLoop(queryDesc->planstate->instrument);
 
-			double expected = queryDesc->plannedstmt->planTree->plan_rows;
-			double nloops = queryDesc->planstate->instrument->nloops;
-			double actual = queryDesc->planstate->instrument->ntuples / nloops;
-			double ratio = actual/expected;
+			expected = queryDesc->plannedstmt->planTree->plan_rows;
+			nloops = queryDesc->planstate->instrument->nloops;
+			actual = queryDesc->planstate->instrument->ntuples / nloops;
+			ratio = actual/expected;
 
-			if ((ratio <= pgpwo_ratio_under || ratio >= pgpwo_ratio_over) && 
+			if ((ratio <= pgpwo_ratio_under || ratio >= pgpwo_ratio_over) &&
 				(expected > pgpwo_min_row_threshold || actual > pgpwo_min_row_threshold)) {
 
 				if (pgpwo_logdir != NULL) {
+					int64_t curr_ms;
 					struct timespec tp;
 					clock_gettime(CLOCK_MONOTONIC_RAW, &tp);
 
-					int64_t curr_ms = (tp.tv_sec * 1000) + (tp.tv_nsec / 100000);
+					curr_ms = (tp.tv_sec * 1000) + (tp.tv_nsec / 100000);
 
 					if (curr_ms - pgpwo_last_ts > pgpwo_min_dump_interval_ms) {
 						char path[MAXPGPATH];
 						File fd;
 
-						snprintf(path, MAXPGPATH, "%s/" EXTNAME "-%d-%lld.sql", pgpwo_logdir, MyBackendId, curr_ms);
+						snprintf(path, MAXPGPATH, "%s/" EXTNAME "-%d-%ld.sql", pgpwo_logdir, MyBackendId, curr_ms);
 
 						ereport(LOG, (errmsg_internal(EXTNAME ": writing dump to path %s", path)));
 
-						if ((fd = PathNameOpenFile(path, O_WRONLY | O_CREAT, 0644)) > 0) {
+						if ((fd = PathNameOpenFile(path, O_WRONLY | O_CREAT
+#if PG_VERSION_NUM < 110000
+												   , 0644
+#endif
+												   )) > 0) {
 							FileWrite(fd, (char *) queryDesc->sourceText, strlen(queryDesc->sourceText), 0);
 							FileClose(fd);
 						} else {
@@ -219,7 +230,7 @@ static void pgpwo_ExecutorEnd(QueryDesc *queryDesc) {
 			}
 		}
 	}
-	
+
 	/* Continue running ExecutorEnd hooks */
 	if (prev_ExecutorEnd) {
 		prev_ExecutorEnd(queryDesc);
